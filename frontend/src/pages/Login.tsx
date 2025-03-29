@@ -6,6 +6,7 @@ import { useLogin } from "../hooks/useAuth";
 import FormInput from "../components/FormInput";
 import FormButton from "../components/FormButton";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -15,6 +16,7 @@ const loginSchema = z.object({
 type LoginFormInputs = z.infer<typeof loginSchema>;
 
 const Login = () => {
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
@@ -30,7 +32,7 @@ const Login = () => {
     login(data, {
       onSuccess: (response) => {
         toast.success("Login successful!");
-        
+        navigate("/user-management"); // Redirect to user management page
         console.log(response);
         // Redirect or store token
       },

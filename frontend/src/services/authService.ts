@@ -9,7 +9,7 @@ export interface LoginResponse {
 }
 
 export const loginUser = async (email: string, password: string): Promise<LoginResponse> => {
-  const response = await axios.post(`${API_URL}/login`, { email, password },{ withCredentials: true });
+  const response = await axios.post(`${API_URL}/login`, { email, password }, { withCredentials: true });
   return response.data;
 };
 
@@ -19,6 +19,6 @@ export const registerUser = async (email: string, password: string): Promise<Log
 };
 
 export const fetchUserProfile = async (): Promise<LoginResponse> => {
-  const response = await axios.get(`${API_URL}/me`, { withCredentials: true });
+  const response = await axios.post(`${API_URL}/me`, {}, { withCredentials: true });
   return response.data;
 };

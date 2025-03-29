@@ -81,7 +81,9 @@ export const logout = async (req: Request, res: Response, next: NextFunction): P
 };
 
 export const getMe = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  
   try {
+    
     if (!req.user || !req.user.id) {
       return next(new UnauthorizedError('Unauthorized access'));
     }
