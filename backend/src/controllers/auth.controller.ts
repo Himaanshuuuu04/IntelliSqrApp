@@ -53,10 +53,68 @@ export const register = async (req: Request, res: Response): Promise<any> => {
 
 
 
-export const login = async (req:Request,res:Response) => {
+export const login = async (req: Request, res: Response) :Promise<any> => {
+	try {
+		const { email, password } = req.body;
+		const user = await prisma.user.findUnique({ where: { email } });
 
-}
+		if (!user) {
+			return res.status(400).json({ error: "Invalid credentials" });
+		}
 
-export const signin = async (req:Request,res:Response) => {
+		const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
-}
+		if (!isPasswordCorrect) {
+			return res.status(400).json({ error: "Invalid credentials" });
+		}
+
+		// Generate JWT token and set it in the cookie
+        const argument = {
+            userId: user.id,
+            res: res
+        };
+        generateToken(argument);
+
+		res.status(200).json({
+			id: user.id,
+			email: user.email,
+            message: "Login successful",
+		});
+	} catch (error: any) {
+		console.log("Error in login controller", error.message);
+		res.status(500).json({ error: "Internal Server Error" });
+	}
+};
+export const logout = async (req: Request, res: Response) => {
+	try {
+		res.cookie("jwt", "", { maxAge: 0 });
+		res.status(200).json({ message: "Logged out successfully" });
+	} catch (error: any) {
+		console.log("Error in logout controller", error.message);
+		res.status(500).json({ error: "Internal Server Error" });
+	}
+};
+
+export const getMe = async (req: Request, res: Response) :Promise<any> => {
+    try {
+        // Ensure req.user is defined and has an id
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ error: "Unauthorized access" });
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.status(200).json({
+            id: user.id,
+            email: user.email,
+            message: "User retrieved successfully",
+        });
+    } catch (error: any) {
+        console.log("Error in getMe controller", error.message);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};

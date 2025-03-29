@@ -1,17 +1,25 @@
 import express from "express";
 import authRoutes from "./routes/auth.route.js";
+import userRoutes from "./routes/user.route.js";
 // import userRoutes from "./routes/user.route.js";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
+import path from "path";
+
 
 dotenv.config();
 const app = express();
-
+app.use(cookieParser()); // for parsing cookies
 app.use(express.json());
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
 
+
+
+// app.get("/", (req, res) => {
+//   res.send("Hello World!");
+// });
+app.use('/api/user',userRoutes);
 app.use('/api/auth',authRoutes);
+
 
 // app.use(express.urlencoded({ extended: true }));
 // app.use('/api/user',userRoutes);

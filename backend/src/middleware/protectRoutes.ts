@@ -1,5 +1,4 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
-
 import { Request, Response, NextFunction } from "express";
 import prisma from "../db/prisma.js";
 
@@ -9,7 +8,7 @@ interface DecodedToken extends JwtPayload {
 
 declare global {
 	namespace Express {
-		export interface Request {
+		export interface Request {					
 			user: {
 				id: string;
 			};
@@ -17,7 +16,7 @@ declare global {
 	}
 }
 
-const protectRoute = async (req: Request, res: Response, next: NextFunction) => {
+const protectRoute = async (req: Request, res: Response, next: NextFunction):Promise<any> => {
 	try {
 		const token = req.cookies.jwt;
 
