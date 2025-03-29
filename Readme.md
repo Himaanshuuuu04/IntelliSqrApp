@@ -125,8 +125,8 @@ cd IntelliSqrApp
   ```
 
 - **Backend**:
+- Go to the topmost path where the repository is cloned
   ```bash
-  cd backend
   npm install
   ```
 
