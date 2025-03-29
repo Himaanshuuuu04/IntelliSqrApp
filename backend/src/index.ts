@@ -4,12 +4,12 @@ import userRoutes from "./routes/user.route.js";
 // import userRoutes from "./routes/user.route.js";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
-import path from "path";
+import { errorHandler } from './middleware/errorMiddleware.js';
 
 
 dotenv.config();
 const app = express();
-app.use(cookieParser()); // for parsing cookies
+app.use(cookieParser()); 
 app.use(express.json());
 
 
@@ -19,10 +19,13 @@ app.use(express.json());
 // });
 app.use('/api/user',userRoutes);
 app.use('/api/auth',authRoutes);
-
+// Ensure errorHandler is used as an error-handling middleware
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  errorHandler(err, req, res, next);
+});
 
 // app.use(express.urlencoded({ extended: true }));
-// app.use('/api/user',userRoutes);
+
 
 const PORT = process.env.PORT || 5000;
 

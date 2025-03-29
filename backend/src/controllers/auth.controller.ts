@@ -1,120 +1,103 @@
-import {Request,Response} from 'express';
+import { Request, Response, NextFunction } from 'express';
 import prisma from '../db/prisma.js';
 import bcrypt from 'bcryptjs';
-import generateToken from "../utils/generateToken.js";
+import generateToken from '../utils/generateToken.js';
+import { BadRequestError, UnauthorizedError, NotFoundError } from '../utils/AppError.js';
 
-export const register = async (req: Request, res: Response): Promise<any> => {  
-    try {
+export const register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
     const { email, password }: { email: string; password: string } = req.body;
-    if ( !email || !password) {
-        return res.status(400).json({ message: "Please fill all the fields" });
+
+    if (!email || !password) {
+      return next(new BadRequestError('Please fill all the fields'));
     }
-    // Check if user already exists
-    const userExists = await prisma.user.findUnique({
-        where: { 
-            email: email,
-        },
-    });
+
+    const userExists = await prisma.user.findUnique({ where: { email } });
+
     if (userExists) {
-        return res.status(400).json({ message: "User already exists" });
+      return next(new BadRequestError('User already exists'));
     }
 
     const salt = await bcrypt.genSalt(7);
     const hashedPassword = await bcrypt.hash(password, salt);
-    // Create user
+
     const newUser = await prisma.user.create({
-        data: {
-            email: email,
-            password: hashedPassword,
-        },
+      data: { email, password: hashedPassword },
     });
-    if (newUser) {
-        // generate token in a sec
-        const argument = {
-            userId: newUser.id,
-            res: res
-        };
-        generateToken(argument);
 
-        res.status(201).json({
-            id: newUser.id,
-            email: newUser.email,
-            message: "User created successfully",
-        });
-    } else {
-        res.status(400).json({ error: "Invalid user data" });
+    if (!newUser) {
+      return next(new BadRequestError('Invalid user data'));
     }
-   
-}catch (error) {
-    console.log("Error in register controller",error);
-    return res.status(500).json({ message: "Internal server error" });
-};
-}
 
+    const argument = { userId: newUser.id, res };
+    generateToken(argument);
 
-
-export const login = async (req: Request, res: Response) :Promise<any> => {
-	try {
-		const { email, password } = req.body;
-		const user = await prisma.user.findUnique({ where: { email } });
-
-		if (!user) {
-			return res.status(400).json({ error: "Invalid credentials" });
-		}
-
-		const isPasswordCorrect = await bcrypt.compare(password, user.password);
-
-		if (!isPasswordCorrect) {
-			return res.status(400).json({ error: "Invalid credentials" });
-		}
-
-		// Generate JWT token and set it in the cookie
-        const argument = {
-            userId: user.id,
-            res: res
-        };
-        generateToken(argument);
-
-		res.status(200).json({
-			id: user.id,
-			email: user.email,
-            message: "Login successful",
-		});
-	} catch (error: any) {
-		console.log("Error in login controller", error.message);
-		res.status(500).json({ error: "Internal Server Error" });
-	}
-};
-export const logout = async (req: Request, res: Response) => {
-	try {
-		res.cookie("jwt", "", { maxAge: 0 });
-		res.status(200).json({ message: "Logged out successfully" });
-	} catch (error: any) {
-		console.log("Error in logout controller", error.message);
-		res.status(500).json({ error: "Internal Server Error" });
-	}
+    res.status(201).json({
+      id: newUser.id,
+      email: newUser.email,
+      message: 'User created successfully',
+    });
+  } catch (error) {
+    next(error); // Pass the error to the error-handling middleware
+  }
 };
 
-export const getMe = async (req: Request, res: Response) :Promise<any> => {
-    try {
-        // Ensure req.user is defined and has an id
-        if (!req.user || !req.user.id) {
-            return res.status(401).json({ error: "Unauthorized access" });
-        }
+export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { email, password } = req.body;
 
-        const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const user = await prisma.user.findUnique({ where: { email } });
 
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
-
-        res.status(200).json({
-            id: user.id,
-            email: user.email,
-            message: "User retrieved successfully",
-        });
-    } catch (error: any) {
-        console.log("Error in getMe controller", error.message);
-        res.status(500).json({ error: "Internal Server Error" });
+    if (!user) {
+      return next(new UnauthorizedError('Invalid credentials'));
     }
+
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordCorrect) {
+      return next(new UnauthorizedError('Invalid credentials'));
+    }
+
+    const argument = { userId: user.id, res };
+    generateToken(argument);
+
+    res.status(200).json({
+      id: user.id,
+      email: user.email,
+      message: 'Login successful',
+    });
+  } catch (error) {
+    next(error); // Pass the error to the error-handling middleware
+  }
+};
+
+export const logout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    res.cookie('jwt', '', { maxAge: 0 });
+    res.status(200).json({ message: 'Logged out successfully' });
+  } catch (error) {
+    next(error); // Pass the error to the error-handling middleware
+  }
+};
+
+export const getMe = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (!req.user || !req.user.id) {
+      return next(new UnauthorizedError('Unauthorized access'));
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+    if (!user) {
+      return next(new NotFoundError('User not found'));
+    }
+
+    res.status(200).json({
+      id: user.id,
+      email: user.email,
+      message: 'User retrieved successfully',
+    });
+  } catch (error) {
+    next(error); // Pass the error to the error-handling middleware
+  }
 };
